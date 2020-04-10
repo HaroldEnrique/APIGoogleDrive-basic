@@ -6,6 +6,7 @@
 - Give/Revoke permissions
 - Copy and move files
 
-* That's it and have fun
 
-- @HaroldEnrique
+That's it and have fun !
+
+@HaroldEnrique
