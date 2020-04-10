@@ -1,0 +1,18 @@
+# Google 
+.gcloudignore
+
+# Python pycache:
+__pycache__/
+
+# iPython
+.ipynb_checkpoints/
+
+# virtual environment
+venv/
+
+# vs code
+.vscode/
+
+# other files
+token.pickle
+client_secret.json
