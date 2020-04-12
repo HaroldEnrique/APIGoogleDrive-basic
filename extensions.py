@@ -16,7 +16,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 def _get_name_folder():
-    name_folder = datetime.date.today().__str__()
+    #name_folder = datetime.date.today().__str__()
+    datetime_obj = datetime.datetime.now()
+    name_folder = datetime_obj.strftime("%d_%m_%Y")
     return name_folder
 
 
@@ -37,8 +39,9 @@ def get_credentials():
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
-                'client_secret.json', config.get("scopes", []))
-            creds = flow.run_local_server(port=8080)
+                'cred2.json', config.get("scopes", []))
+            
+            creds = flow.run_local_server(port=8088)
         # Save the credentials for the next run
         with open('token.pickle', 'wb') as token:
             pickle.dump(creds, token)
@@ -74,7 +77,7 @@ def create_folder(drive_service, parent_id, name_folder=None):
     if name_folder is None:
         name_folder = _get_name_folder()
     else:
-        name_folder = "PFR_"+name_folder+_get_name_folder()
+        name_folder = name_folder+"_"+_get_name_folder()
 
     file_metadata = {
         'name': name_folder,
@@ -122,35 +125,36 @@ def revoke_permissions(drive_service):
     qt_folder_id = config.get("base_folder_report")
     
     date_today=_get_name_folder()
-    query_folder_quarantine = f"mimeType='application/vnd.google-apps.folder' and 'frihai2@hotmail.com' in owners and name='{date_today}' and '{qt_folder_id}' in parents"
+    query_folder_quarantine = f"mimeType='application/vnd.google-apps.folder' and 'frihai10@gmail.com' in owners and name='{date_today}' and '{qt_folder_id}' in parents"
     folder_day = get_files(drive_service,1,query_folder_quarantine)
-    id_folder_day = folder_day[0].get("id","")
-    owners_permissionids = folder_day[0].get("permissionIds",[])
+    if folder_day:
+        id_folder_day = folder_day[0].get("id","")
+        owners_permissionids = folder_day[0].get("permissionIds",[])
 
-    #query = "mimeType='application/vnd.google-apps.folder' and 'frihai2@hotmail.com' in owners and name contains 'PFR'"
-    query = f"mimeType='application/vnd.google-apps.folder' and 'frihai2@hotmail.com' in owners and '{id_folder_day}' in parents"
-    all_teachers = get_files(drive_service,20, query)
+        #query = "mimeType='application/vnd.google-apps.folder' and 'frihai2@hotmail.com' in owners and name contains 'PFR'"
+        query = f"mimeType='application/vnd.google-apps.folder' and 'frihai10@gmail.com' in owners and '{id_folder_day}' in parents"
+        all_teachers = get_files(drive_service,20, query)
+        if all_teachers:
+            for share_teacher in all_teachers:
+                file_id = share_teacher.get("id")
+                file_name = share_teacher.get("name")
+                role = "reader"
+                permissions = share_teacher.get("permissionIds")
+                print(permissions)
+                for perm_id in permissions:
+                    if perm_id not in owners_permissionids:
+                        res_update = drive_service.permissions().update(
+                            fileId = file_id,
+                            permissionId = perm_id,
+                            body={
+                                'role':role
+                            },
+                            fields='id'
+                        ).execute()
 
-    for share_teacher in all_teachers:
-        file_id = share_teacher.get("id")
-        file_name = share_teacher.get("name")
-        role = "reader"
-        permissions = share_teacher.get("permissionIds")
-        print(permissions)
-        for perm_id in permissions:
-            if perm_id not in owners_permissionids:
-                res_update = drive_service.permissions().update(
-                    fileId = file_id,
-                    permissionId = perm_id,
-                    body={
-                        'role':role
-                    },
-                    fields='id'
-                ).execute()
-
-                logging.info("update permissions response for %s > %s", file_name, res_update)
-            else:
-                logging.debug("owner permission cant be removed : %s",perm_id)
+                        logging.info("update permissions response for %s > %s", file_name, res_update)
+                    else:
+                        logging.debug("owner permission cant be removed : %s",perm_id)
 
 def upload_file(drive_service):
     folder_id = '1Ymxz2u5MF0w6nUMkNq1CLCcv_NNquqOu'

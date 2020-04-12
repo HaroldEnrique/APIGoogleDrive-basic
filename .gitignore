@@ -15,4 +15,4 @@ venv/
 
 # other files
 token.pickle
-client_secret.json
+client_credentials.json
